@@ -1,0 +1,317 @@
+---
+header-includes: \usepackage{media9}
+output:
+  beamer_presentation: default
+  html_document: default
+  html_presentation: default
+  slidy_presentation: default
+  ioslides_presentation: default
+---
+
+---
+title: "Basketball Analytics with R"
+author: "Jackson P. Lautier"
+date: "10/10/2020"
+output:
+  beamer_presentation: default
+  slidy_presentation: default
+  ioslides_presentation: default
+subtitle: UConn Sports Analytics Symposium 2020
+---
+
+## Workshop Outline
+
+- Introduce the \texttt{R} package \texttt{BasketballAnalyzeR}
+- Introduce Fundamental (Advanced) Basketball Statistics
+- Recap 17-18' National Basketball Association (NBA) Season
+- Statistical Case Studies
+  + Is Kevin Durant `good at basketball'?
+  + Visualizing the value of Kyle Lowry
+  + Understanding the Golden State Warriors (GSW) offense
+  + Clustering NBA teams
+  + The lost art of the mid-range
+- Summary
+- References and Further Reading
+
+## \texttt{BasketballAnalyzeR}
+
+- Paola Zuccolotto and Marica Manisera (2020), \textit{Basketball Data Science – with Applications in R}. Chapman and Hall/CRC. ISBN 9781138600799
+- https://bdsports.unibs.it/
+- https://bdsports.unibs.it/basketballanalyzer/
+
+![Buy Me! I'm a `Slam Dunk'](/Users/jacksonlautier/Desktop/uconn_phd/sports_conference/basketball/textbook_cover.png){width=110px}
+
+## \texttt{BasketballAnalyzeR} Cont.
+
+- Includes many useful functions: \texttt{shotchart()}, \texttt{fourfactors()}, \texttt{assistnet()}, \texttt{expectedpts()}, and many more
+
+- Includes preloaded datasets for the 2017-2018 NBA season: 
+  + \texttt{Obox}: GSW opponent's box scores
+  + \texttt{PbP.BDP}: GSW play-by-play data
+  + \texttt{PBox}: Players box score statistics
+  + \texttt{Tadd}: Team Standings
+  + \texttt{TBox}: Team box score statistics
+
+- All figures and analysis in today's presentation compiled using \texttt{BasketballAnalyzer}.  See associated \texttt{github} materials for code:
+
+- https://github.com/jackson-lautier/UCSAS-Basketball-Analytics-R
+
+## Fundamental Basketball Statistics
+
+Table 2.4 (Zuccolotto and Manisera)
+
+\begin{tabular}{cccc}
+\hline
+Factor & Offense & Defense\\
+\hline
+\\
+$eFG\%$ & $\frac{ (2PM)_T + 1.5 \times (3PM)_T }{ (2PA)_T + (3PA)_T}$ & $\frac{ (2PM)_O + 1.5 \times (3PM)_O }{ (2PA)_O + (3PA)_O}$\\
+\\
+$TO$ Ratio & $\frac{TOV_T}{POSS_T}$ & $\frac{TOV_O}{POSS_O}$\\
+\\
+$REB\%$ & $\frac{OREB_T}{OREB_T + DREB_O}$ & $\frac{DREB_T}{OREB_O + DREB_T}$\\
+\\
+$FT$ Rate & $\frac{FTM_T}{(2PA)_T + (3PA)_T}$ & $\frac{FTM_O}{(2PA)_O + (3PA)_O}$\\
+\\
+\hline
+\end{tabular}
+
+The \textit{Four Factors} by Kubatko, J., Oliver, D., Pelton, K., and Rosenbaum, D. T. (2007). \textit{A
+starting point for analyzing basketball statistics}. Journal of Quantitative Analysis in Sports, 3(3):1–22
+
+## 2017-2018 NBA Season Review
+
+- NBA Champions: Golden State Warriors def. Cleveland Cavaliers (4-0); (CLE def. BOS, GSW def. HOU)
+- Finals MVP: Kevin Durant (GSW)
+- MVP: James Harden (HOU)
+- ROY: Ben Simmons (PHI)
+- DPOY: Rudy Gobert (UTA)
+- All-NBA First Team: F - Kevin Durant (GSW), F - LeBron James (CLE), C - Anthony Davis (NOP), G - James Harden (HOU), G - Damian Lillard (POR)
+
+## 2017-2018 NBA Season Review (Cont.)
+
+```{r, message = FALSE, echo = FALSE, warning = FALSE, fig.show = 'hide'}
+#install.packages('BasketballAnalyzeR')
+library('BasketballAnalyzeR')
+FF <- fourfactors(Tbox, Obox)
+listPlots <- plot(FF) #four plots available
+#listPlots[2] #view plot of interest
+```
+
+```{r, echo = FALSE, results = 'hide'}
+listPlots[2]
+```
+
+## CS1: Kevin Durant
+
+![``I don't need analytics to tell me LeBron James is good at basketball." -Jeff Van Gundy](/Users/jacksonlautier/Desktop/uconn_phd/sports_conference/basketball/jvg.png){width=30%}
+
+Warm-up: Is Kevin Durant `good at basketball'?
+
+![](/Users/jacksonlautier/Desktop/uconn_phd/sports_conference/basketball/kd.png){width=30%}
+
+
+## C1: Kevin Durant (Cont.)
+
+Kevin Durant Shot Chart (interesting but not definitive)
+
+```{r, message = FALSE, echo = FALSE, warning = FALSE, out.width = "70%"}
+PbP <- PbPmanipulation(PbP.BDB) #prepare dataset
+subdata <- subset(PbP, player=="Kevin Durant")
+subdata$xx <- subdata$original_x/10
+subdata$yy <- subdata$original_y/10-41.75
+shotchart(data=subdata, x="xx", y="yy", z = 'result',
+          scatter=TRUE, pt.col = 'red', bg.col = 'white',
+          result='result')
+```
+
+## CS1: Kevin Durant (Cont.)
+
+Kevin Durant Shot Chart by Play-Length (much more definitive)
+
+```{r, message = FALSE, echo = FALSE, warning = FALSE, out.width = "70%"}
+shotchart(data=subdata, x="xx", y="yy", z="playlength",
+          num.sect=5, type="sectors", scatter=FALSE,
+          result = "result")
+```
+
+## CS2: Kyle Lowry
+
+![](/Users/jacksonlautier/Desktop/uconn_phd/sports_conference/basketball/lowry.png){width=30%}
+
+
+Kyle Lowry (TOR) was a polarizing player in 2017-2018.  Some felt he was 'overrated', while other felt he was 'under appreciated'.  His traditional counting statistics are not conclusive.  Can we use more advanced data analytics to better understand Kyle Lowry's value?
+\vspace{0.5cm}
+
+\begin{center}
+\begin{tabular}{cccccccc}
+Yr & GP & FG\% & 3P\% & FT\% & RPG & APG & PPG\\
+\hline
+2017-18 & 78 & 0.427 & 0.399 & 0.854 & 5.6 & 6.9 & 16.2\\
+\hline
+\end{tabular}
+\end{center}
+
+## CS2: Kyle Lowry (Cont.)
+
+Multidimensional Scaling (MDS) is a "nonlinear dimensionality reduction tool that allows [us] to plot a map visualizing the level of similarity of individual cases [within] a dataset".
+
+We start with a distance matrix $\mathbf{D}^p = (d_{ij})_{i,j=1,\ldots,N}$ based on all $p$ variables, $X_1, \ldots, X_p$ and attempt to find $q << p$ such that $\mathbf{D}^q$ fits as closely as possible to $\mathbf{D}^p$.
+
+A standard measure of distance is Euclidean distance,
+\begin{equation*}
+d_{ij} = \sqrt{ \sum_{h=1}^{p} (x_{ih} - x_{jh})^2}
+\end{equation*}
+
+The ``Stress Index" $(S)$ allows us to assess how close $\mathbf{D}^q$ approximates $\mathbf{D}^p$; 0.00\% is a perfect fit, and we should avoid $S > 20\%$.
+
+## CS2: Kyle Lowry (Cont.)
+
+```{r, message = FALSE, echo = FALSE, warning = FALSE, results = 'hide', out.width = "90%"}
+attach(Pbox)
+data <- data.frame(PTS, P3M, P2M, REB=OREB+DREB,
+                     AST, TOV, STL, BLK)
+detach(Pbox)
+data <- subset(data, Pbox$MIN>=1500)
+id <- Pbox$Player[Pbox$MIN>=1500]
+
+mds <- MDSmap(data)
+plot(mds, labels=id, subset=which(id=="Kyle Lowry" | id=="Stephen Curry"),
+     col.subset = "tomato")
+```
+
+Original variable dimension (8): PTS, P3M, P2M, REB, AST, TOV, STL, BLK reduced to two dimensions.  Restricted to players with over 1,500 minutes.
+
+## CS3: Golden State Warriors Offense
+
+The Warriors offense was famous for its passing and 'free-flowing' ball movement.  Can we use statistics to better understand and assess player roles?
+
+![2017-2018 Golden State Warriors](/Users/jacksonlautier/Desktop/uconn_phd/sports_conference/basketball/gsw.png){width=60%}
+
+## CS3: Golden State Warriors Offense (Cont.)
+
+We can employ \textit{network analysis}, in which we construct and analyzes graphs consisting of nodes related to each other by a set of attributes.  This will allow us to find symmetric or asymmetric relationships between discrete objects.
+
+Our nodes/discrete objects will be players, and we will build an assist-network in hopes of better understanding the roles of each player with Golden State's offense.
+
+Note: the underlying data will be "play-by-play" data.
+
+## CS3: Golden State Warriors Offense (Cont.)
+
+```{r, message = FALSE, echo = FALSE, warning = FALSE, results = 'hide', out.width = "90%"}
+PbP.GSW <- subset(PbP, team=="GSW")
+netdata <- assistnet(PbP.GSW)
+set.seed(7)
+plot(netdata, layout="circle", edge.thr=20)
+```
+
+## CS4: Cluster Analysis of NBA teams
+
+The NBA using a weighted lottery system to determine draft selection order.  The worse a team's record from the previous season, the higher its odds at receiving a high draft pick.  To take advantage of this, some teams have employed a `tanking strategy', in which a team purposefully employs a weak roster in hopes of getting a high draft pick in the upcoming draft.  Can we use statistics to help a team determine its strategy?
+
+!["The quickest way to win is to lose." - Sam Hinkie](/Users/jacksonlautier/Desktop/uconn_phd/sports_conference/basketball/hinkie.png){width=50%}
+
+## CS4: Cluster Analysis of NBA teams (Cont.)
+
+Cluster Analysis is a classification technique used to divide individual cases into groups (clusters) such that each case within a cluster is "similar" (according to a given criterion) yet "different" from the cases in other clusters.  Cluster Analysis is an \textit{unsupervised} classification technique.
+
+Here we employ a specific technique of Cluster Analysis, $k$-means clustering, to NBA teams based on the "four factors".
+
+[see Ch. 4 of \textit{Basketball Data Science} for details]
+
+## CS4: Cluster Analysis of NBA teams (Cont.)
+
+```{r, message = FALSE, echo = FALSE, warning = FALSE, results = 'hide', out.width = "100%"}
+FF <- fourfactors(Tbox, Obox)
+OD.Rtg <- FF$ORtg/FF$DRtg
+F1.r <- FF$F1.Off/FF$F1.Def
+F2.r <- FF$F2.Def/FF$F2.Off
+F3.Off <- FF$F3.Off
+F3.Def <- FF$F3.Def
+P3M <- Tbox$P3M
+STL.r <- Tbox$STL/Obox$STL
+data <- data.frame(OD.Rtg, F1.r, F2.r, F3.Off, F3.Def,
+                   P3M, STL.r)
+
+set.seed(29)
+kclu2 <- kclustering(data, labels=Tbox$Team, k=5)
+
+cluster <- as.factor(kclu2$Subjects$Cluster)
+Xbubble <- data.frame(Team=Tbox$Team, PTS=Tbox$PTS,
+                      PTS.Opp=Obox$PTS, cluster,
+                      W=Tbox$W)
+labs <- c("PTS", "PTS.Opp", "cluster", "Wins")
+bubbleplot(Xbubble, id="Team", x="PTS", y="PTS.Opp",
+           col="cluster", size="W", labels=labs)
+```
+
+## CS5: The Lost Art of the Mid-Range
+
+![Stat Nerds Example of a "Bad Shot" ](/Users/jacksonlautier/Desktop/uconn_phd/sports_conference/basketball/jordan_mr.png){width=70%}
+
+## CS5: The Lost Art of the Mid-Range (Cont.)
+
+We briefly introduce the concept of \textit{expected value}.  Suppose we have a discrete random variable, $X$ over a sample space, $\mathcal{X}$.  We may define the expected value, $E(X)$, as
+
+\begin{equation*}
+E(X) = \sum_{\mathcal{X}} x * P(X = x)
+\end{equation*}
+
+For example, if a player shoots 45\% on 2-point FG's, his expected value per 2-point shot is
+
+\begin{equation*}
+P(X = \text{Make}) * 2 + P(X = \text{Miss})* 0 = (45\%)(2) + (55\%)(0) = 0.9
+\end{equation*}
+
+## CS5: The Lost Art of the Mid-Range (Cont.)
+
+```{r, message = FALSE, echo = FALSE, warning = FALSE, results = 'hide', out.width = "100%"}
+PbP.GSW.sd <- subset(PbP.GSW, shot_distance < 40)
+Pbox.GSW <- subset(Pbox, PTS>=500 &
+                     Team=="Golden State Warriors")
+pl <- c("Klay Thompson", "Kevin Durant", "Draymond Green", "Stephen Curry")
+
+mypal <- colorRampPalette(c("red","green"))
+expectedpts(data=PbP.GSW.sd, players=pl,
+            col.team="gray", palette=mypal,
+            col.hline="gray")
+```
+
+## Summary
+
+- \texttt{BasketballAnalyzeR}
+
+- Case studies to review
+
+  + creating shot charts
+  + dimension reduction techniques
+  + network analysis
+  + expected points per shot distance
+
+
+## Further Introductory Reading/Listening
+
+- \textit{The Lowe Post} with Zach Lowe (podcast, ESPN)
+- \textit{SprawlBall: A Visual Tour of the New Era of the NBA} by Kirk Goldsberry
+- \textit{Basketball Analytics: Objective and Efficient Strategies for Understanding How Teams Win} by Stephen M. Shea, Christopher E. Baker
+- \textit{Basketball on Paper: Rules and Tools for Performance Analysis} by Dean Oliver
+
+## Acknowledgements
+
+Jeff Van Gundy Image: 
+https://sports.yahoo.com/sources-jeff-van-gundy-coach-u-s-world-cup-qualifying-010607886.html
+
+Kevin Durant Image:
+https://www.complex.com/tag/kevin-durant
+
+Kyle Lowry Image:
+https://sportstar.thehindu.com/basketball/kyle-lowry-toronto-raptors-lebron-james-larry-bird-nba-finals-nba-playoffs/article32359075.ece
+
+Golden State Warriors Image:
+https://www.nytimes.com/2017/01/24/sports/basketball/golden-state-warriors-kevin-durant-steph-curry.html
+
+Michael Jordan Image:
+https://www.totalprosports.com/2017/01/29/utah-judge-rules-michael-jordan-pushed-off-on-bryon-russell-in-1998-nba-finals/
+
+
+
